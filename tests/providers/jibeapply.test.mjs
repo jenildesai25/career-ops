@@ -70,6 +70,18 @@ try {
   };
   const parsedJibe = parseJibeapplyResponse(sampleJson, entry);
 
+  if (parsedJibe[0].postedAt === undefined) pass('parseJibeapplyResponse omits postedAt when the payload has no date');
+  else fail(`undated row postedAt = ${parsedJibe[0].postedAt}`);
+
+  const dated = parseJibeapplyResponse({
+    jobs: [{ title: 'Staff Engineer', slug: 'staff-1', posted_date: '2026-11-25T23:27:00+0000', city: 'Austin', country: 'United States' }],
+  }, entry);
+  if (dated[0]?.postedAt === Date.parse('2026-11-25T23:27:00+00:00')) {
+    pass('parseJibeapplyResponse reads posted_date with a +0000 offset');
+  } else {
+    fail(`posted_date parsed as ${dated[0]?.postedAt}`);
+  }
+
   if (parsedJibe.length === 3) pass('parseJibeapplyResponse extracts 3 valid jobs');
   else fail(`parseJibeapplyResponse returned ${parsedJibe.length} jobs, expected 3`);
 

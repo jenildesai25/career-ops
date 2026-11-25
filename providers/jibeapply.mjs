@@ -55,6 +55,25 @@ function toApiUrl(rawUrl) {
   return u.href;
 }
 
+/**
+ * Jibe sends posted_date as an ISO timestamp, sometimes with a +0000 offset
+ * and no colon. Epoch seconds show up on a few tenants. An unreadable value
+ * stays absent so the age filter keeps its "missing date passes" rule.
+ * @param {unknown} value
+ * @returns {number|undefined}
+ */
+function jibePostedAtMs(value) {
+  if (typeof value === 'number' && Number.isFinite(value) && value > 0) {
+    return value < 1e12 ? Math.round(value * 1000) : Math.round(value);
+  }
+  if (typeof value !== 'string' || !value.trim()) return undefined;
+  let s = value.trim();
+  if (/[+-]\d{4}$/.test(s)) s = s.replace(/([+-]\d{2})(\d{2})$/, '$1:$2');
+  const ms = Date.parse(s);
+  if (!Number.isFinite(ms) || ms <= 0) return undefined;
+  return ms;
+}
+
 // Validate an explicit entry.api URL (any HTTPS hostname — used for iCIMS-hosted,
 // branded JibeApply sites that share the same JSON schema).
 function validateExplicitApi(apiUrl) {
@@ -86,12 +105,17 @@ export function parseJibeapplyResponse(json, entry) {
       // .filter(Boolean) removes the null).
       const encodedSlug = safeEncodeURIComponent(slug);
       if (encodedSlug === null) return null;
-      return {
+      const job = {
         title,
         url: `${origin}/jobs/${encodedSlug}`,
         company: String(d.hiring_organization || entry.name || '').trim(),
         location: d.full_location || [d.city, d.country].filter(Boolean).join(', '),
       };
+      // The list payload carries posted_date. Leaving it off made every Jibe
+      // posting look undated, so a posting-age filter could not see it.
+      const postedAt = jibePostedAtMs(d.posted_date ?? d.update_date ?? d.create_date);
+      if (postedAt !== undefined) job.postedAt = postedAt;
+      return job;
     })
     .filter(Boolean);
 }
