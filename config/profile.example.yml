@@ -36,6 +36,17 @@ candidate:
   # Optional framing for the CV photo: rounded (default), circle, or square.
   photo_style: rounded
 
+# Optional. Current employer exclusion for scan / triage / evaluate / apply.
+# Prefer deriving Present roles from cv.md at runtime (local/current-employer.mjs
+# when present, or the agent reading Work Experience date lines). Set this only
+# as an override or alias list when the CV is ambiguous (multiple Present roles,
+# missing dates, contractor). Agents must never find or apply to these companies.
+# current_employers:
+#   - name: "Acme Corp"
+#     aliases:
+#       - "Acme"
+#       - "acme-corp"
+
 target_roles:
   # Your North Star roles — what you're optimizing for
   primary:
